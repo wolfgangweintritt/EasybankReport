@@ -1,0 +1,3 @@
+Bankomat,"^Auszahlung Karte "
+Bankomat,"^Auszahlung Maestro "
+ÖBB,"^Bezahlung .*OEBB"
