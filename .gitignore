@@ -5,3 +5,4 @@ output*
 data/ibans.csv
 data/text.csv
 seleniumTest.py
+umsatzliste.csv
