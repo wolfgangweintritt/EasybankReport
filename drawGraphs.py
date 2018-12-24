@@ -3,20 +3,24 @@
 import os
 import math
 import datetime
+from typing import List, Tuple, Dict, Any
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 from matplotlib.dates import date2num
 import matplotlib.cm as cm
 import numpy as np
-
-#### GLOBALS ####
+import enforce
+from decimal import *
 from transaction import Transaction
 
+#### GLOBALS ####
 dpi = 96
 figsize = (1600 / dpi, 800 / dpi)
 plotFolder = None
 
 
-def drawAllGraphs(csvData, dataFolder, skipFirstTransaction, year=None):
+@enforce.runtime_validation
+def drawAllGraphs(csvData: List[Transaction], dataFolder: str, skipFirstTransaction: bool, year: int = None) -> None:
     global transactions
     transactions = csvData
 
@@ -57,7 +61,8 @@ def drawAllGraphs(csvData, dataFolder, skipFirstTransaction, year=None):
 
 # calculate balance at the end of each month to an array, return it
 # return an array containing tuples with date and balance for each month: [('01-01-2018', 100), ('01-02-2018', 222), ...]
-def getMonthlyBalance():
+@enforce.runtime_validation
+def getMonthlyBalance() -> List[Tuple[datetime.datetime, Decimal]]:
     monthlyBalance = []
     balance = 0
     lastTuple = None
@@ -74,7 +79,8 @@ def getMonthlyBalance():
 
 # calculate earnings and expenses for each month, return it
 # return an array with triple-arrays of date, income and expenses: [['2018-01-01', 100, 200], ['2018-02-01', 500, 222], ...]
-def getMonthlyEarningsAndExpenses(skipFirstTransaction):
+@enforce.runtime_validation
+def getMonthlyEarningsAndExpenses(skipFirstTransaction: bool) -> List[List[Any]]:
     monthlyIO = []
     io = [0, 0]
     lastDate = None
@@ -98,7 +104,8 @@ def getMonthlyEarningsAndExpenses(skipFirstTransaction):
 
 
 # return array of tuples [(2018, {'category1': 100, 'category2': 200, ...}), (2019, {}), ...]
-def getYearlyCategoricalCashflow(skipFirstTransaction, income=True):
+@enforce.runtime_validation
+def getYearlyCategoricalCashflow(skipFirstTransaction: bool, income: bool = True) -> List[Tuple[float, Dict]]:
     yearlyIO = []
     categoricalCashflow = {}
     lastDate = None
@@ -109,7 +116,7 @@ def getYearlyCategoricalCashflow(skipFirstTransaction, income=True):
             skip = False
             continue
         if lastDate is not None and lastDate.year != transaction.date.year:
-            yearlyIO.append((lastDate.year, categoricalCashflow))
+            yearlyIO.append((float(lastDate.year), categoricalCashflow))
             categoricalCashflow = {}
         category = transaction.category if transaction.category != '' else 'Uncategorized'
         if (income and transaction.amount > 0) or (not income and transaction.amount < 0):
@@ -120,12 +127,13 @@ def getYearlyCategoricalCashflow(skipFirstTransaction, income=True):
         lastDate = transaction.date
 
     if lastDate is not None:
-        yearlyIO.append((lastDate.year, categoricalCashflow))
+        yearlyIO.append((float(lastDate.year), categoricalCashflow))
     return yearlyIO
 
 
 # return array of tuples [(2018.25, {'category1': 100, 'category2': 200, ...}), (2018.50: {}), ...]
-def getQuarterYearlyCategoricalCashflow(skipFirstTransaction, income=True):
+@enforce.runtime_validation
+def getQuarterYearlyCategoricalCashflow(skipFirstTransaction: bool, income: bool = True) -> List[Tuple[float, Dict]]:
     yearlyIO = []
     categoricalCashflow = {}
     lastDate = None
@@ -151,19 +159,21 @@ def getQuarterYearlyCategoricalCashflow(skipFirstTransaction, income=True):
     return yearlyIO
 
 
-def plotMonthlyBalance(monthlyBalance):
+@enforce.runtime_validation
+def plotMonthlyBalance(monthlyBalance: List[Tuple[datetime.datetime, Decimal]]) -> None:
     plt.figure(figsize=figsize)
     plt.plot([x[0] for x in monthlyBalance], [x[1] for x in monthlyBalance])
 
     labelAxisAndSavePlot('date', 'balance', 'monthlyBalance.png')
 
 
-def plotMonthlyIO(monthlyIO):
+@enforce.runtime_validation
+def plotMonthlyIO(monthlyIO: List[List[Any]]) -> None:
     plt.figure(figsize=figsize)
 
     w = 12  # width = 12 days
     x = date2num([x[0] for x in monthlyIO])
-    ax = plt.subplot(111)
+    ax: Axes = plt.subplot(111)
     incomeBar = ax.bar(x - (w / 2), [x[1] for x in monthlyIO], width=w, color='#67a9cf', align='center', label='Income')
     expensesBar = ax.bar(x + (w / 2), [x[2] for x in monthlyIO], width=w, color='#ef8a62', align='center', label='Expenses')
     ax.xaxis_date()
@@ -173,7 +183,8 @@ def plotMonthlyIO(monthlyIO):
     labelAxisAndSavePlot('date', 'income and expenses', 'monthlyIncomeAndExpenses.png')
 
 
-def plotCategorical(yearlyCategorical, income=True, quarters=False):
+@enforce.runtime_validation
+def plotCategorical(yearlyCategorical: List[Tuple[float, Dict]], income: bool = True, quarters: bool = False) -> None:
     categories = getCategoriesFromMap(yearlyCategorical)
     plt.figure(figsize=figsize)
 
@@ -184,7 +195,7 @@ def plotCategorical(yearlyCategorical, income=True, quarters=False):
     xAxis = [x[0] for x in yearlyCategorical]
 
     colors = getColorsForCategories(categories)
-    ax = plt.subplot(111)
+    ax: Axes = plt.subplot(111)
 
     bars = []
     for idx, category in enumerate(categories):
@@ -201,7 +212,8 @@ def plotCategorical(yearlyCategorical, income=True, quarters=False):
     labelAxisAndSavePlot('year', yLabel, fileName)
 
 
-def getCategoriesFromMap(yearlyCategorical):
+@enforce.runtime_validation
+def getCategoriesFromMap(yearlyCategorical: List[Tuple[float, Dict]]) -> List[str]:
     # get all categories first
     categories = []
     for year in yearlyCategorical:
@@ -211,7 +223,8 @@ def getCategoriesFromMap(yearlyCategorical):
     return categories
 
 
-def getColorsForCategories(categories):
+@enforce.runtime_validation
+def getColorsForCategories(categories: List[str]) -> np.ndarray:
     # get different color for each category
     # https://stackoverflow.com/questions/12236566/setting-different-color-for-each-series-in-scatter-plot-on-matplotlib
     x = np.arange(len(categories))
@@ -219,13 +232,20 @@ def getColorsForCategories(categories):
     return cm.rainbow(np.linspace(0, 1, len(ys)))
 
 
-def labelAxisAndSavePlot(xLabel, yLabel, fileName):
+@enforce.runtime_validation
+def labelAxisAndSavePlot(xLabel: str, yLabel: str, fileName: str) -> None:
     plt.ylabel(xLabel)
     plt.xlabel(yLabel)
     plt.savefig(plotFolder + fileName)
 
 
-def printSummary(monthlyBalance, monthlyIO, yearlyIncome, yearlyExpenses):
+@enforce.runtime_validation
+def printSummary(
+        monthlyBalance: List[Tuple[datetime.datetime, Decimal]],
+        monthlyIO: List[List[Any]],
+        yearlyIncome: List[Tuple[float, Dict]],
+        yearlyExpenses: List[Tuple[float, Dict]]
+) -> None:
     for mb in monthlyBalance:
         print(mb)
     print()

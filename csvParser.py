@@ -4,6 +4,8 @@
 import csv
 import datetime
 import re
+from typing import List, Tuple
+
 from transaction import Transaction
 
 #### GLOBALS ####
@@ -14,24 +16,28 @@ silent = False
 
 
 #### MAIN ####
-def parseTransactions(staySilent, csvFilepath):
+def parseTransactions(staySilent: bool, csvFilepath: str) -> List[Transaction]:
     global silent
+    global knownIbans
+    global textRegex
     silent = staySilent
 
-    loadCsvIntoTupleList('data/ibans.csv', knownIbans)
-    loadCsvIntoTupleList('data/text.csv', textRegex)
+    knownIbans = loadCsvIntoTupleList('data/ibans.csv')
+    textRegex = loadCsvIntoTupleList('data/text.csv')
 
     return getTransactions(csvFilepath)
 
 
-def loadCsvIntoTupleList(filename, tupleList):
+def loadCsvIntoTupleList(filename: str) -> List[Tuple[str, str]]:
+    tupleList = []
     with open(filename, newline='') as csvfile:
         csvReader = csv.reader(csvfile, delimiter=',')
         for row in csvReader:
             tupleList.append((row[0], row[1]))
+    return tupleList
 
 
-def getTransactions(csvFilepath):
+def getTransactions(csvFilepath: str) -> List[Transaction]:
     stack = []
     with open(csvFilepath, newline='', encoding='latin-1') as csvfile:
         csvReader = csv.reader(csvfile, delimiter=';')
@@ -49,7 +55,7 @@ def getTransactions(csvFilepath):
     return list(reversed(stack))
 
 
-def getCategory(iban, text):
+def getCategory(iban: str, text: str) -> str:
     for (tCategory, tIban) in knownIbans:
         if tIban == iban:
             return tCategory
@@ -61,6 +67,6 @@ def getCategory(iban, text):
     return ''
 
 
-def log(msg):
+def log(msg: str) -> None:
     if not silent:
         print(msg)
